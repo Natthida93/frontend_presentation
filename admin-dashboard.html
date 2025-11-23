@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard</title>
+
+<style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f6f9; margin: 0; }
+    header { background-color: #007bff; color: white; padding: 20px; text-align: center; position: relative; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    header .logout-btn { position: absolute; right: 20px; top: 20px; padding: 10px 20px; font-size: 1rem; background: #dc3545; border: none; color: white; border-radius: 6px; cursor: pointer; transition: 0.3s ease; }
+    header .logout-btn:hover { background: #b02a37; }
+    .refresh-btn { background: #28a745; color: white; padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; margin: 20px auto; display: block; font-size: 1rem; }
+    table { width: 95%; margin: 20px auto; border-collapse: collapse; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    th, td { padding: 12px; border: 1px solid #ddd; text-align: center; }
+    th { background: #f1f1f1; }
+    button { padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; }
+    .btn-delete { background: #dc3545; color: white; }
+    .btn-delete:hover { background: #b02a37; }
+    select { padding: 6px; border-radius: 4px; }
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Admin Dashboard</h1>
+    <p>Manage Bookings & Payment Status</p>
+    <button class="logout-btn" id="logoutBtn">Logout</button>
+</header>
+
+<button class="refresh-btn" onclick="loadBookings()">🔄 Refresh Data</button>
+
+<table id="bookingTable">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Email</th>
+            <th>Concert</th>
+            <th>Seat</th>
+            <th>Status</th>
+            <th>Booking Time</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="bookingData"></tbody>
+</table>
+
+<script>
+function loadBookings() {
+    const bookings = JSON.parse(localStorage.getItem("bookings")) || [];
+    const tbody = document.getElementById("bookingData");
+    tbody.innerHTML = "";
+
+    bookings.forEach((b, index) => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${b.fullName || "-"}</td>
+            <td>${b.userEmail}</td>
+            <td>${b.concertName}</td>
+            <td>${b.seatNumber}</td>
+            <td>
+                <select onchange="updateStatus(${index}, this.value)">
+                    <option value="Pending" ${b.status === 'Pending' ? 'selected' : ''}>Pending</option>
+                    <option value="Paid" ${b.status === 'Paid' ? 'selected' : ''}>Paid</option>
+                    <option value="Cancelled" ${b.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                </select>
+            </td>
+            <td>${b.date}</td>
+            <td><button class="btn-delete" onclick="deleteBooking(${index})">Delete</button></td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function updateStatus(index, newStatus) {
+    let bookings = JSON.parse(localStorage.getItem("bookings")) || [];
+    bookings[index].status = newStatus;
+    localStorage.setItem("bookings", JSON.stringify(bookings));
+    alert("Status updated!");
+}
+
+function deleteBooking(index) {
+    if (!confirm("Delete this booking?")) return;
+    let bookings = JSON.parse(localStorage.getItem("bookings")) || [];
+    bookings.splice(index, 1);
+    localStorage.setItem("bookings", JSON.stringify(bookings));
+    loadBookings();
+    alert("Booking deleted.");
+}
+
+document.getElementById("logoutBtn").addEventListener("click", () => {
+    localStorage.removeItem("isAdmin");
+    window.location.href = "index.html";
+});
+
+// Auto-load bookings
+loadBookings();
+</script>
+
+</body>
+</html>

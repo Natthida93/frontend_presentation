@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Book Concert</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+<section class="home">
+    <div class="home-content">
+        <h1>Book Your Concert</h1>
+
+        <p><strong>Name:</strong> <span id="userName"></span></p>
+        <p><strong>Region:</strong> <span id="userRegion"></span></p>
+
+        <label for="concertSelect">Choose a concert:</label><br />
+        <select id="concertSelect"></select>
+
+        <p><strong>Price:</strong> $<span id="concertPrice">0</span></p>
+        <p><strong>Available Seats:</strong> <span id="availableSeats">0</span></p>
+
+        <form id="paymentForm">
+            <label for="proof">Upload payment screenshot:</label><br />
+            <input type="file" id="proof" accept="image/*" required /><br /><br />
+            <button type="submit" class="btn">Submit Booking</button>
+        </form>
+    </div>
+</section>
+
+<script>
+    /* ----------------------------
+       LOAD USER INFO
+    ---------------------------- */
+    const userName = localStorage.getItem("fullName") || "Unknown";
+    const userRegion = localStorage.getItem("region") || "Unknown";
+    const userEmail = localStorage.getItem("userEmail") || "";
+
+    document.getElementById("userName").textContent = userName;
+    document.getElementById("userRegion").textContent = userRegion;
+
+    if (!userEmail) {
+        alert("Please log in again.");
+        window.location.href = "index.html";
+    }
+
+    /* ----------------------------
+       LOAD DEMO CONCERT DATA
+    ---------------------------- */
+    if (!localStorage.getItem("concerts")) {
+        const demoConcerts = [
+            { id: 1, title: "GOT7 Concert", price: 120, availableSeats: 30 },
+            { id: 2, title: "Keshi Concert", price: 90, availableSeats: 20 },
+            { id: 3, title: "Cortis Concert", price: 150, availableSeats: 10 }
+        ];
+        localStorage.setItem("concerts", JSON.stringify(demoConcerts));
+    }
+
+    const concertSelect = document.getElementById("concertSelect");
+    const concertPrice = document.getElementById("concertPrice");
+    const availableSeatsSpan = document.getElementById("availableSeats");
+
+    let concerts = JSON.parse(localStorage.getItem("concerts"));
+
+    function loadConcerts() {
+        concertSelect.innerHTML = "";
+        concerts.forEach(c => {
+            const option = document.createElement("option");
+            option.value = c.id;
+            option.textContent = `${c.title} — $${c.price}`;
+            option.dataset.price = c.price;
+            option.dataset.seats = c.availableSeats;
+            concertSelect.appendChild(option);
+        });
+        updateConcertInfo();
+    }
+
+    function updateConcertInfo() {
+        const selected = concertSelect.options[concertSelect.selectedIndex];
+        concertPrice.textContent = selected.dataset.price;
+        availableSeatsSpan.textContent = selected.dataset.seats;
+    }
+
+    concertSelect.addEventListener("change", updateConcertInfo);
+
+    /* ----------------------------
+       SUBMIT BOOKING
+    ---------------------------- */
+    document.getElementById("paymentForm").addEventListener("submit", e => {
+        e.preventDefault();
+
+        const selected = concertSelect.options[concertSelect.selectedIndex];
+        const concertId = selected.value;
+        const availableSeats = parseInt(selected.dataset.seats);
+        const price = parseFloat(selected.dataset.price);
+        const file = document.getElementById("proof").files[0];
+
+        if (availableSeats <= 0) {
+            alert("This concert is fully booked.");
+            return;
+        }
+
+        if (!file) {
+            alert("Please upload a screenshot.");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function () {
+            const booking = {
+                fullName: userName,       // added fullName for admin dashboard
+                concertId,
+                concertName: selected.textContent,
+                userEmail,
+                price,
+                seatNumber: Math.floor(Math.random() * 200) + 1,
+                status: "Pending",
+                paymentProof: reader.result,
+                date: new Date().toLocaleString()
+            };
+
+            // Save booking
+            let userBookings = JSON.parse(localStorage.getItem("bookings")) || [];
+            userBookings.push(booking);
+            localStorage.setItem("bookings", JSON.stringify(userBookings));
+
+            // Reduce seats
+            concerts = concerts.map(c =>
+                c.id == concertId
+                    ? { ...c, availableSeats: c.availableSeats - 1 }
+                    : c
+            );
+            localStorage.setItem("concerts", JSON.stringify(concerts));
+
+            // Redirect to success page
+            window.location.href = "success.html";
+        };
+
+        reader.readAsDataURL(file);
+    });
+
+    loadConcerts();
+</script>
+
+</body>
+</html>
